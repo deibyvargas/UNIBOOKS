@@ -3,6 +3,9 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Flat
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from './constants/Colors'; 
 
+// 📦 IMPORTACIÓN DE TIPOS GLOBALES
+import { Libro, LoginResponse } from './types';
+
 // 🚀 IMPORTACIONES DE FUENTES
 import { 
   useFonts, 
@@ -24,23 +27,23 @@ export default function App() {
   });
 
   // --- ESTADOS DE AUTENTICACIÓN ---
-  const [estaLogueado, setEstaLogueado] = useState(false);
-  const [esRegistro, setEsRegistro] = useState(false); // 🆕 Para alternar entre Login y Registro
-  const [nombre, setNombre] = useState(''); // 🆕 Para el nombre en registro
-  const [correo, setCorreo] = useState('');
-  const [password, setPassword] = useState('');
+  const [estaLogueado, setEstaLogueado] = useState<boolean>(false);
+  const [esRegistro, setEsRegistro] = useState<boolean>(false);
+  const [nombre, setNombre] = useState<string>('');
+  const [correo, setCorreo] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
   // --- ESTADOS DEL INVENTARIO ---
-  const [titulo, setTitulo] = useState('');
-  const [autor, setAutor] = useState('');
-  const [precio, setPrecio] = useState('');
-  const [imagen, setImagen] = useState(null); 
-  const [libros, setLibros] = useState([]); 
-  const [busqueda, setBusqueda] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [editandoId, setEditandoId] = useState(null);
+  const [titulo, setTitulo] = useState<string>('');
+  const [autor, setAutor] = useState<string>('');
+  const [precio, setPrecio] = useState<string>('');
+  const [imagen, setImagen] = useState<string | null>(null); 
+  const [libros, setLibros] = useState<Libro[]>([]); 
+  const [busqueda, setBusqueda] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
 
-  const urlNgrok = 'https://elodia-nonhereditable-kittie.ngrok-free.dev';
+  const urlNgrok: string = 'https://elodia-nonhereditable-kittie.ngrok-free.dev';
 
   // --- LÓGICA DE FOTOS ---
   const seleccionarImagen = async () => {
@@ -50,7 +53,7 @@ export default function App() {
       return;
     }
     const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [3, 4],
       quality: 0.5,
@@ -60,7 +63,7 @@ export default function App() {
     }
   };
 
-  // --- 🆕 LÓGICA DE REGISTRO ---
+  // --- LÓGICA DE REGISTRO ---
   const manejarRegistro = async () => {
     if (!correo || !password || !nombre) {
       Alert.alert("Campos vacíos", "Por favor completa todos los datos para registrarte.");
@@ -75,7 +78,7 @@ export default function App() {
       const data = await response.json();
       if (response.ok) {
         Alert.alert("✅ ¡Éxito!", "Cuenta creada correctamente. Ahora puedes iniciar sesión.");
-        setEsRegistro(false); // Volver al login tras éxito
+        setEsRegistro(false);
       } else {
         Alert.alert("❌ Error", data.detail || "No se pudo crear la cuenta.");
       }
@@ -96,13 +99,13 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ correo, password }),
       });
-      const data = await response.json();
+      const data: LoginResponse = await response.json();
       if (response.ok) {
         setEstaLogueado(true);
         Alert.alert("¡Bienvenido!", `Hola ${data.usuario}`);
         cargarLibros();
       } else {
-        Alert.alert("Error de acceso", data.detail || "Credenciales incorrectas");
+        Alert.alert("Error de acceso", "Credenciales incorrectas");
       }
     } catch (error) {
       Alert.alert("Error", "No se pudo conectar al servidor.");
@@ -115,7 +118,7 @@ export default function App() {
       const response = await fetch(`${urlNgrok}/libros`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
-      const data = await response.json();
+      const data: Libro[] = await response.json();
       setLibros(data);
     } catch (error) {
       console.error("Error al cargar:", error);
@@ -131,7 +134,7 @@ export default function App() {
     libro.autor.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const prepararEdicion = (libro) => {
+  const prepararEdicion = (libro: Libro) => {
     setTitulo(libro.titulo);
     setAutor(libro.autor);
     setPrecio(libro.precio.toString());
@@ -148,17 +151,18 @@ export default function App() {
     const formData = new FormData();
     formData.append('titulo', titulo);
     formData.append('autor', autor);
-    formData.append('precio', precio.toString());
+    formData.append('precio', precio);
 
     if (imagen && !imagen.startsWith('http')) { 
-      const filename = imagen.split('/').pop();
+      const filename = imagen.split('/').pop() || 'upload.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
+      
       formData.append('imagen', {
         uri: imagen,
         name: filename,
         type: type,
-      });
+      } as any);
     }
 
     const url = editandoId ? `${urlNgrok}/libros/${editandoId}` : `${urlNgrok}/libros`;
@@ -185,7 +189,7 @@ export default function App() {
     }
   };
 
-  const eliminarLibro = (id, nombre) => {
+  const eliminarLibro = (id: number, nombre: string) => {
     Alert.alert("🗑️ Eliminar", `¿Borrar "${nombre}"?`, [
       { text: "Cancelar", style: "cancel" },
       { text: "Sí, borrar", style: "destructive", onPress: async () => {
@@ -196,7 +200,7 @@ export default function App() {
     ]);
   };
 
-  const renderLibro = ({ item }) => (
+  const renderLibro = ({ item }: { item: Libro }) => (
     <TouchableOpacity style={styles.libroCard} onPress={() => prepararEdicion(item)} activeOpacity={0.7}>
       {item.imagen_url && (
         <Image 
@@ -215,7 +219,6 @@ export default function App() {
     </TouchableOpacity>
   );
 
-  // --- PANTALLA DE CARGA ---
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.primary }}>
@@ -224,7 +227,6 @@ export default function App() {
     );
   }
 
-  // --- LOGIN / REGISTRO ---
   if (!estaLogueado) {
     return (
       <SafeAreaView style={styles.loginContainer}>
@@ -235,7 +237,6 @@ export default function App() {
             {esRegistro ? "Crear nueva cuenta" : "Gestión de Inventario"}
           </Text>
 
-          {/* Campo Nombre: Solo se muestra si esRegistro es true */}
           {esRegistro && (
             <TextInput 
               style={styles.inputLogin} 
@@ -256,11 +257,10 @@ export default function App() {
             <Text style={styles.buttonText}>{esRegistro ? "REGISTRARME" : "ENTRAR"}</Text>
           </TouchableOpacity>
 
-          {/* Alternar entre modos */}
           <TouchableOpacity 
             onPress={() => {
               setEsRegistro(!esRegistro);
-              setNombre(''); // Limpiar nombre al cambiar
+              setNombre('');
             }} 
             style={{ marginTop: 20 }}
           >
@@ -273,7 +273,6 @@ export default function App() {
     );
   }
 
-  // --- PANEL PRINCIPAL ---
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -336,7 +335,6 @@ export default function App() {
   );
 }
 
-// Estilos se mantienen iguales...
 const styles = StyleSheet.create({
   loginContainer: { flex: 1, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   loginCard: { backgroundColor: Colors.surface, width: '85%', padding: 30, borderRadius: 25, elevation: 15, alignItems: 'center' },

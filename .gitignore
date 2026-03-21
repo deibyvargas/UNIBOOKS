@@ -1,14 +1,19 @@
-# Python
+# Python & Backend
 __pycache__/
 venv/
 .env
 *.pyc
+uploads/
 
 # Expo / React Native
 node_modules/
 .expo/
 dist/
 npm-debug.log*
+yarn-error.log*
+.expo-shared/
 
-# Base de datos local (si aplica)
+# Base de datos
+# Si quieres que tu base de datos NO se suba a GitHub, deja la siguiente línea:
 *.db
+# Si quieres que se suba, bórrala o ponle un # al principio.

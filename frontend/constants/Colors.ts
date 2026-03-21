@@ -12,4 +12,7 @@ export const Colors = {
   background: '#fbfcfa',
   surface: '#ffffff',
   window: '#e6eacc'
-};
+} as const;
+
+// Esto permite que otras partes del código sepan qué tipos de colores hay
+export type AppTheme = typeof Colors;
