@@ -25,6 +25,8 @@ export default function App() {
 
   // --- ESTADOS DE AUTENTICACIÓN ---
   const [estaLogueado, setEstaLogueado] = useState(false);
+  const [esRegistro, setEsRegistro] = useState(false); // 🆕 Para alternar entre Login y Registro
+  const [nombre, setNombre] = useState(''); // 🆕 Para el nombre en registro
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
 
@@ -55,6 +57,30 @@ export default function App() {
     });
     if (!resultado.canceled) {
       setImagen(resultado.assets[0].uri);
+    }
+  };
+
+  // --- 🆕 LÓGICA DE REGISTRO ---
+  const manejarRegistro = async () => {
+    if (!correo || !password || !nombre) {
+      Alert.alert("Campos vacíos", "Por favor completa todos los datos para registrarte.");
+      return;
+    }
+    try {
+      const response = await fetch(`${urlNgrok}/registro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, correo, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert("✅ ¡Éxito!", "Cuenta creada correctamente. Ahora puedes iniciar sesión.");
+        setEsRegistro(false); // Volver al login tras éxito
+      } else {
+        Alert.alert("❌ Error", data.detail || "No se pudo crear la cuenta.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "No hay conexión con el servidor.");
     }
   };
 
@@ -198,18 +224,49 @@ export default function App() {
     );
   }
 
-  // --- LOGIN ---
+  // --- LOGIN / REGISTRO ---
   if (!estaLogueado) {
     return (
       <SafeAreaView style={styles.loginContainer}>
         <StatusBar barStyle="light-content" />
         <View style={styles.loginCard}>
           <Text style={styles.loginTitle}>UNIBOOKS</Text>
-          <Text style={styles.loginSubtitle}>Gestión de Inventario</Text>
+          <Text style={styles.loginSubtitle}>
+            {esRegistro ? "Crear nueva cuenta" : "Gestión de Inventario"}
+          </Text>
+
+          {/* Campo Nombre: Solo se muestra si esRegistro es true */}
+          {esRegistro && (
+            <TextInput 
+              style={styles.inputLogin} 
+              placeholder="Nombre completo" 
+              value={nombre} 
+              onChangeText={setNombre} 
+              placeholderTextColor={Colors.gray} 
+            />
+          )}
+
           <TextInput style={styles.inputLogin} placeholder="Correo institucional" value={correo} onChangeText={setCorreo} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={Colors.gray} />
           <TextInput style={styles.inputLogin} placeholder="Contraseña" value={password} onChangeText={setPassword} secureTextEntry={true} placeholderTextColor={Colors.gray} />
-          <TouchableOpacity style={styles.loginButton} onPress={manejarLogin}>
-            <Text style={styles.buttonText}>ENTRAR</Text>
+          
+          <TouchableOpacity 
+            style={styles.loginButton} 
+            onPress={esRegistro ? manejarRegistro : manejarLogin}
+          >
+            <Text style={styles.buttonText}>{esRegistro ? "REGISTRARME" : "ENTRAR"}</Text>
+          </TouchableOpacity>
+
+          {/* Alternar entre modos */}
+          <TouchableOpacity 
+            onPress={() => {
+              setEsRegistro(!esRegistro);
+              setNombre(''); // Limpiar nombre al cambiar
+            }} 
+            style={{ marginTop: 20 }}
+          >
+            <Text style={{ color: Colors.primary, fontFamily: 'OpenSans-SemiBold' }}>
+              {esRegistro ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Regístrate aquí"}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -279,6 +336,7 @@ export default function App() {
   );
 }
 
+// Estilos se mantienen iguales...
 const styles = StyleSheet.create({
   loginContainer: { flex: 1, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   loginCard: { backgroundColor: Colors.surface, width: '85%', padding: 30, borderRadius: 25, elevation: 15, alignItems: 'center' },
