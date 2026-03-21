@@ -9,8 +9,11 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo-google-fonts/montserrat": "^0.4.2",
+    "@expo-google-fonts/open-sans": "^0.4.2",
     "expo": "^55.0.8",
     "expo-constants": "~55.0.9",
+    "expo-font": "~55.0.4",
     "expo-image-picker": "~55.0.13",
     "expo-linking": "~55.0.8",
     "expo-router": "~55.0.7",
