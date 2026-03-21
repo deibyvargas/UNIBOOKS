@@ -1,8 +1,14 @@
+# Python
 __pycache__/
-*.py[cod]
 venv/
 .env
+*.pyc
+
+# Expo / React Native
 node_modules/
 .expo/
 dist/
-.DS_Store
+npm-debug.log*
+
+# Base de datos local (si aplica)
+*.db
