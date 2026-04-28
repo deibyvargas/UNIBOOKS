@@ -1,37 +1,39 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Mantenemos DeibyVargas.DB para persistencia
-SQLALCHEMY_DATABASE_URL = "sqlite:///./DeibyVargas.DB"
+# --- LÓGICA DE CONEXIÓN DINÁMICA ---
+# 1. Heroku nos dará la URL en 'DATABASE_URL'. 
+# 2. Si no existe (en tu PC), usará tu archivo local 'DeibyVargas.DB'.
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./DeibyVargas.DB")
 
-# Creamos el motor de conexión
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    connect_args={"check_same_thread": False}
-)
+# Corrección de protocolo para SQLAlchemy (Heroku usa postgres:// pero se requiere postgresql://)
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Configuramos la fábrica de sesiones
+# Configuramos el motor según la base de datos
+if "sqlite" in SQLALCHEMY_DATABASE_URL:
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, 
+        connect_args={"check_same_thread": False} # Solo para SQLite
+    )
+else:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base para los modelos
 Base = declarative_base()
 
 def inicializar_base_de_datos():
     """
-    Sincroniza los modelos con el archivo DeibyVargas.DB.
+    Sincroniza los modelos con la base de datos (Local o Heroku).
     """
     try:
         from . import models 
-        
-        # Crea las tablas si no existen
         Base.metadata.create_all(bind=engine)
-        
-        print("--- REPORTE DE SISTEMA UNIBOOKS ---")
-        print("✅ Base de datos 'DeibyVargas.DB' sincronizada.")
-        print("✅ Nuevas tablas: Chats, Calificaciones, Notificaciones")
-        print("✅ Tablas existentes: Usuarios, Libros, Transacciones, Mensajes")
-        print("------------------------------------")
-        
+        print("--- SISTEMA UNIBOOKS ---")
+        print(f"✅ Base de datos conectada: {SQLALCHEMY_DATABASE_URL.split(':')[0]}")
+        print("-------------------------")
     except Exception as e:
-        print(f"❌ Error crítico al inicializar la base de datos: {e}")
+        print(f"❌ Error al conectar la base de datos: {e}")
