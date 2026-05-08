@@ -30,7 +30,9 @@ def inicializar_base_de_datos():
     Sincroniza los modelos con la base de datos (Local o Heroku).
     """
     try:
-        from . import models 
+        from ..models import models 
+        
+        # Crea las tablas si no existen
         Base.metadata.create_all(bind=engine)
         print("--- SISTEMA UNIBOOKS ---")
         print(f"✅ Base de datos conectada: {SQLALCHEMY_DATABASE_URL.split(':')[0]}")
