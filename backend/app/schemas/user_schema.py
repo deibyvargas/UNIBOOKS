@@ -11,3 +11,10 @@ class RegistroRequest(BaseModel):
     password: str
     carrera: Optional[str]
     semestre: Optional[str]
+
+class CalificacionRequest(BaseModel):
+    transaccion_id: int
+    calificado_id: int
+    calificador_id: int
+    estrellas: int
+    comentario: str

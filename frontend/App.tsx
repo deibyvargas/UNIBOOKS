@@ -7,6 +7,10 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from './constants/Colors'; 
 import { Libro } from './types';
+import ChatScreen from "./screens/ChatScreen";
+import ChatDetailScreen from "./screens/ChatDetailScreen";
+import ProfileScreen from "./screens/ProfileScreen";
+``
 
 import { 
   useFonts, 
@@ -19,11 +23,20 @@ import {
 } from '@expo-google-fonts/open-sans';
 
 // --- CONFIGURACIÓN GLOBAL ---
-const URL_BASE = 'https://elodia-nonhereditable-kittie.ngrok-free.dev';
+const URL_BASE = 'unibooks-g3cjb8fmewd3efe8.mexicocentral-01.azurewebsites.net';
 const HEADERS_NGROK = { 'ngrok-skip-browser-warning': 'true' };
 
 // --- TIPOS ---
-type SeccionActual = 'inicio' | 'inventario' | 'registro' | 'perfil' | 'misPublicaciones' | 'historial' | 'chat';
+type SeccionActual =
+  | 'inicio'
+  | 'inventario'
+  | 'registro'
+  | 'perfil'
+  | 'misPublicaciones'
+  | 'historial'
+  | 'chat'
+  | 'chat_detalle';
+
 type EstadoLibro = 'Nuevo' | 'Buen estado' | 'Usado' | 'Dañado';
 type TipoPublicacion = 'venta' | 'intercambio' | 'ambos';
 
@@ -438,6 +451,71 @@ export default function App() {
     );
   };
 
+  const abrirChat = async (chat: Chat) => {
+  setChatActivo(chat);
+
+  try {
+    const res = await fetch(`${URL_BASE}/chats/${chat.id}/mensajes`, {
+      headers: HEADERS_NGROK
+    });
+
+    const data = await res.json();
+    setMensajes(data);
+    setSeccionActual('chat_detalle');
+  } catch (e) {
+    Alert.alert("Error", "No se pudo cargar el chat");
+  }
+};
+
+  const enviarMensaje = async () => {
+  if (!nuevoMensaje.trim() || !chatActivo) return;
+
+  try {
+    await fetch(`${URL_BASE}/chats/${chatActivo.id}/mensajes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...HEADERS_NGROK
+      },
+      body: JSON.stringify({
+        emisor_id: usuario.id,
+        emisor_nombre: usuario.nombre,
+        mensaje: nuevoMensaje
+      })
+    });
+
+    setNuevoMensaje('');
+    abrirChat(chatActivo);
+
+  } catch (e) {
+    Alert.alert("Error", "No se pudo enviar mensaje");
+  }
+};
+
+const calificarUsuario = async (trans: Transaccion) => {
+  try {
+    await fetch(`${URL_BASE}/usuarios/calificaciones`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...HEADERS_NGROK
+      },
+      body: JSON.stringify({
+        transaccion_id: trans.id,
+        calificado_id: trans.vendedorId,
+        calificador_id: usuario.id,
+        estrellas: 5,
+        comentario: "Buen trato"
+      })
+    });
+
+    Alert.alert("✅ Calificación enviada");
+
+  } catch (e) {
+    Alert.alert("Error", "No se pudo calificar");
+  }
+};
+
   const crearNotificacion = (usuarioId: number, tipo: string, mensaje: string) => {
     console.log(`Notificación para usuario ${usuarioId}: ${mensaje}`);
     setNotificaciones(prev => [{
@@ -456,6 +534,20 @@ export default function App() {
       {transacciones.filter(t => t.compradorId === usuario?.id && t.estado === 'completado').length > 0 ? (
         transacciones.filter(t => t.compradorId === usuario?.id && t.estado === 'completado').map(trans => (
           <View key={trans.id} style={styles.transaccionCard}>
+            {trans.estado === 'completado' && (
+  <TouchableOpacity
+    style={{
+      backgroundColor: '#FFD700',
+      padding: 10,
+      borderRadius: 10,
+      marginTop: 10,
+      alignItems: 'center'
+    }}
+    onPress={() => calificarUsuario(trans)}
+  >
+    <Text>⭐ Calificar usuario</Text>
+  </TouchableOpacity>
+)}
             <Text style={styles.transaccionTitulo}>{trans.libroTitulo}</Text>
             <Text style={styles.transaccionInfo}>Vendedor: {trans.vendedorNombre}</Text>
             <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
@@ -545,13 +637,18 @@ export default function App() {
       keyExtractor={(item) => item.id.toString()}
       style={styles.content}
       renderItem={({item}) => (
-        <View style={styles.chatItem}>
+        <TouchableOpacity
+  style={styles.chatItem}
+  onPress={() => abrirChat(item)}
+>
           <View style={styles.chatItemContent}>
             <Text style={styles.chatItemTitulo}>{item.libroTitulo}</Text>
             <Text style={styles.chatItemMsg}>{item.ultimoMensaje}</Text>
             <Text style={styles.chatItemFecha}>{new Date(item.ultimaFecha).toLocaleDateString()}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
+
+
       )}
       ListEmptyComponent={<Text style={styles.noDataText}>No hay conversaciones activas</Text>}
     />
@@ -857,10 +954,28 @@ export default function App() {
           </ScrollView>
         )}
 
-        {seccionActual === 'perfil' && <RenderPerfil />}
+        {seccionActual === 'perfil' && (
+  <ProfileScreen usuario={usuario} />
+)}
+``
         {seccionActual === 'historial' && <RenderHistorial />}
         {seccionActual === 'misPublicaciones' && <RenderMisPublicaciones />}
-        {seccionActual === 'chat' && <RenderChats />}
+
+        {seccionActual === 'chat' && (
+          <ChatScreen chats={chats} abrirChat={abrirChat as any} />
+        )}
+
+        {seccionActual === 'chat_detalle' && (
+  <ChatDetailScreen
+    mensajes={mensajes}
+    nuevoMensaje={nuevoMensaje}
+    setNuevoMensaje={setNuevoMensaje}
+    enviarMensaje={enviarMensaje}
+    usuario={usuario}
+  />
+)}
+ 
+
       </View>
 
       {!tecladoVisible && (
