@@ -22,7 +22,7 @@ def inicializar_base_de_datos():
     Sincroniza los modelos con el archivo DeibyVargas.DB.
     """
     try:
-        from . import models 
+        from ..models import models 
         
         # Crea las tablas si no existen
         Base.metadata.create_all(bind=engine)

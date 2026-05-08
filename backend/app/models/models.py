@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Text, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from .database import Base
+from ..core.database import Base
 import datetime
 
 class Usuario(Base):
