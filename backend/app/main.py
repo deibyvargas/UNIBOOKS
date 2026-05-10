@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import libro_routes, usuario_routes, transaccion_routes, chat_routes
+from app.routes import libro_routes, user_routes, transaccion_routes, chat_routes
 from app.core.database import inicializar_base_de_datos
 import os
 
@@ -27,8 +27,6 @@ app.add_middleware(
 
 # rutas
 app.include_router(libro_routes.router)
-app.include_router(usuario_routes.router)
+app.include_router(user_routes.router)
 app.include_router(transaccion_routes.router)
 app.include_router(chat_routes.router)
-app.include_router(chat_routes.router)
-app.include_router(usuario_routes.router)

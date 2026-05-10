@@ -1,36 +1,33 @@
-from app.models import models
-from sqlalchemy.orm import Session
+from app.models.models import Usuario
 
-def crear_calificacion(db: Session, data):
-    # evitar duplicados
-    existe = db.query(models.Calificacion).filter(
-        models.Calificacion.transaccion_id == data.transaccion_id,
-        models.Calificacion.calificador_id == data.calificador_id
-    ).first()
 
+# ✅ CREAR USUARIO
+def crear_usuario(db, usuario):
+    # validar duplicado
+    existe = db.query(Usuario).filter(Usuario.correo == usuario.correo).first()
     if existe:
-        return {"error": "Ya calificaste esta transacción"}
+        return {"error": "El correo ya está registrado"}
 
-    # validar rango
-    if data.estrellas < 1 or data.estrellas > 5:
-        return {"error": "Calificación inválida"}
+    nuevo_usuario = Usuario(
+        nombre=usuario.nombre,
+        correo=usuario.correo,
+        password=usuario.password,
+        carrera=usuario.carrera,
+        semestre=usuario.semestre
+    )
 
-    nueva = models.Calificacion(**data.dict())
-    db.add(nueva)
-
-    # recalcular reputación
-    calificaciones = db.query(models.Calificacion).filter(
-        models.Calificacion.calificado_id == data.calificado_id
-    ).all()
-
-    promedio = (sum(c.estrellas for c in calificaciones) + data.estrellas) / (len(calificaciones) + 1)
-
-    usuario = db.query(models.Usuario).filter(
-        models.Usuario.id == data.calificado_id
-    ).first()
-
-    usuario.reputacion = promedio
-
+    db.add(nuevo_usuario)
     db.commit()
+    db.refresh(nuevo_usuario)
 
-    return {"mensaje": "Calificación guardada", "reputacion": promedio}
+    return {"mensaje": "Usuario creado", "usuario": nuevo_usuario}
+
+
+# ✅ LOGIN
+def login(db, usuario):
+    user = db.query(Usuario).filter(Usuario.correo == usuario.correo).first()
+
+    if not user or user.password != usuario.password:
+        return {"error": "Credenciales incorrectas"}
+
+    return {"mensaje": "Login correcto", "usuario": user}
