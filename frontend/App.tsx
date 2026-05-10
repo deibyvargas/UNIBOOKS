@@ -23,7 +23,8 @@ import {
 } from '@expo-google-fonts/open-sans';
 
 // --- CONFIGURACIÓN GLOBAL ---
-const URL_BASE = 'unibooks-g3cjb8fmewd3efe8.mexicocentral-01.azurewebsites.net';
+
+const URL_BASE = 'https://unibooks-g3cjb8fmewd3efe8.canadacentral-01.azurewebsites.net/api'; // Cambia a tu IP local o dominio
 const HEADERS_NGROK = { 'ngrok-skip-browser-warning': 'true' };
 
 // --- TIPOS ---
@@ -187,7 +188,7 @@ export default function App() {
       }
       setLoading(true);
       try {
-        const res = await fetch(`${URL_BASE}/registro`, {
+        const res = await fetch(`${URL_BASE}/usuarios/registro`, {
           method: 'POST', 
           headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' }, 
           body: JSON.stringify(formUser)
@@ -206,7 +207,7 @@ export default function App() {
     } else {
       setLoading(true);
       try {
-        const res = await fetch(`${URL_BASE}/login`, {
+        const res = await fetch(`${URL_BASE}/usuarios/login`, {
           method: 'POST',
           headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' },
           body: JSON.stringify({
