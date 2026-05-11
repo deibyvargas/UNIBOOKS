@@ -12,6 +12,7 @@ class Usuario(Base):
     carrera = Column(String(100))
     semestre = Column(String(20))
     reputacion = Column(Float, default=5.0)
+    foto_perfil = Column(String(255))
     fecha_registro = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relaciones

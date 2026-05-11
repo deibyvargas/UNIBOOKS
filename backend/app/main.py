@@ -611,3 +611,41 @@ def obtener_usuario(usuario_id: int, db: Session = Depends(get_db)):
         "reputacion": usuario.reputacion,
         "transacciones": transacciones
     }
+
+@app.post("/usuarios/{usuario_id}/foto-perfil")
+async def subir_foto_perfil(
+    usuario_id: int, 
+    foto_perfil: UploadFile = File(...), 
+    db: Session = Depends(get_db)
+):
+    """Subir foto de perfil para un usuario"""
+    usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Validar tipo de archivo
+    if not foto_perfil.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
+    
+    # Crear directorio uploads si no existe
+    uploads_dir = "uploads"
+    if not os.path.exists(uploads_dir):
+        os.makedirs(uploads_dir)
+    
+    # Generar nombre único para el archivo
+    file_extension = os.path.splitext(foto_perfil.filename)[1]
+    unique_filename = f"perfil_{usuario_id}_{uuid.uuid4().hex}{file_extension}"
+    file_path = os.path.join(uploads_dir, unique_filename)
+    
+    # Guardar archivo
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(foto_perfil.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al guardar la imagen: {str(e)}")
+    
+    # Actualizar usuario en la base de datos
+    usuario.foto_perfil = unique_filename
+    db.commit()
+    
+    return {"message": "Foto de perfil actualizada", "foto_perfil": unique_filename}

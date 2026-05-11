@@ -19,8 +19,7 @@ import {
 } from '@expo-google-fonts/open-sans';
 
 // --- CONFIGURACIÓN GLOBAL ---
-const URL_BASE = 'https://elodia-nonhereditable-kittie.ngrok-free.dev';
-const HEADERS_NGROK = { 'ngrok-skip-browser-warning': 'true' };
+const URL_BASE = 'http://10.11.5.48:8000';
 
 // --- TIPOS ---
 type SeccionActual = 'inicio' | 'inventario' | 'registro' | 'perfil' | 'misPublicaciones' | 'historial' | 'chat';
@@ -112,7 +111,6 @@ export default function App() {
   const [chatActivo, setChatActivo] = useState<Chat | null>(null);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
-  const [notificaciones, setNotificaciones] = useState<any[]>([]);
 
   // --- ESTADOS DE FORMULARIOS ---
   const [formLibro, setFormLibro] = useState({
@@ -139,13 +137,14 @@ export default function App() {
     if (!usuario?.id) return;
     setLoading(true);
     try {
-      const [resLibros, resDestacados, resMisPublicaciones, resTransacciones, resSolicitudes, resChats] = await Promise.all([
-        fetch(`${URL_BASE}/libros`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/libros/destacados`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/transacciones`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`, { headers: HEADERS_NGROK })
+      const [resLibros, resDestacados, resMisPublicaciones, resTransacciones, resSolicitudes, resChats, resCalificaciones] = await Promise.all([
+        fetch(`${URL_BASE}/libros`),
+        fetch(`${URL_BASE}/libros/destacados`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/transacciones`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/calificaciones`)
       ]);
       if (resLibros.ok) setLibros(await resLibros.json());
       if (resDestacados.ok) setLibrosDestacados(await resDestacados.json());
@@ -153,6 +152,12 @@ export default function App() {
       if (resTransacciones.ok) setTransacciones(await resTransacciones.json());
       if (resSolicitudes.ok) setSolicitudesPendientes(await resSolicitudes.json());
       if (resChats.ok) setChats(await resChats.json());
+      if (resCalificaciones.ok) setCalificaciones(await resCalificaciones.json());
+
+      // Cargar foto de perfil
+      if (usuario.fotoPerfil) {
+        setFotoPerfil(`${URL_BASE}/uploads/${usuario.fotoPerfil}`);
+      }
     } catch (error) {
       console.error("Error al cargar datos:", error);
     } finally {
@@ -176,7 +181,7 @@ export default function App() {
       try {
         const res = await fetch(`${URL_BASE}/registro`, {
           method: 'POST', 
-          headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' }, 
+          headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify(formUser)
         });
         if (res.ok) { 
@@ -195,7 +200,7 @@ export default function App() {
       try {
         const res = await fetch(`${URL_BASE}/login`, {
           method: 'POST',
-          headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             correo: formUser.correo,
             password: formUser.password
@@ -204,10 +209,13 @@ export default function App() {
         
         const data = await res.json();
         
-        if (res.ok && data.usuario) {
-          setUsuario(data.usuario);
+        // Cambiamos la validación para aceptar 'usuario' o el objeto directo
+        const usuarioValidado = data.usuario || data;
+
+        if (res.ok && usuarioValidado && usuarioValidado.id) {
+          setUsuario(usuarioValidado);
           setEstaLogueado(true);
-          Alert.alert("Bienvenido", `Hola ${data.usuario.nombre}`);
+          Alert.alert("Bienvenido", `Hola ${usuarioValidado.nombre}`);
         } else {
           Alert.alert("Error", data.detail || "Credenciales incorrectas");
         }
@@ -262,7 +270,7 @@ export default function App() {
       { text: "Cancelar" },
       { text: "Eliminar", onPress: async () => {
         try {
-          const res = await fetch(`${URL_BASE}/libros/${id}`, { method: 'DELETE', headers: HEADERS_NGROK });
+          const res = await fetch(`${URL_BASE}/libros/${id}`, { method: 'DELETE' });
           if (res.ok) { 
             cargarDatos(); 
             setLibroSeleccionado(null);
@@ -336,8 +344,7 @@ export default function App() {
         method: editandoId ? 'PUT' : 'POST', 
         body: formData,
         headers: {
-          'Accept': 'application/json',
-          ...HEADERS_NGROK
+          'Accept': 'application/json'
         }
       });
       
@@ -387,7 +394,7 @@ export default function App() {
             try {
               const res = await fetch(`${URL_BASE}/solicitudes`, {
                 method: 'POST',
-                headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   libro_id: libro.id,
                   solicitante_id: usuario.id,
@@ -422,7 +429,7 @@ export default function App() {
             try {
               const res = await fetch(`${URL_BASE}/solicitudes/${solicitud.id}`, {
                 method: 'PUT',
-                headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: aceptar ? 'aceptado' : 'rechazado' })
               });
               if (res.ok) {
@@ -438,15 +445,183 @@ export default function App() {
     );
   };
 
-  const crearNotificacion = (usuarioId: number, tipo: string, mensaje: string) => {
-    console.log(`Notificación para usuario ${usuarioId}: ${mensaje}`);
-    setNotificaciones(prev => [{
-      id: Date.now(),
-      tipo,
-      mensaje,
-      leida: false,
-      fecha: new Date().toISOString()
-    }, ...prev]);
+  const abrirChat = async (chat: Chat) => {
+    setChatActivo(chat);
+    setLoading(true);
+    try {
+      const res = await fetch(`${URL_BASE}/chats/${chat.id}/mensajes`);
+      if (res.ok) {
+        const mensajesData = await res.json();
+        setMensajes(mensajesData);
+      }
+    } catch (error) {
+      console.error("Error cargando mensajes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const enviarMensaje = async () => {
+    if (!nuevoMensaje.trim() || !chatActivo || !usuario) return;
+
+    try {
+      const res = await fetch(`${URL_BASE}/chats/${chatActivo.id}/mensajes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emisor_id: usuario.id,
+          emisor_nombre: usuario.nombre,
+          mensaje: nuevoMensaje.trim()
+        })
+      });
+
+      if (res.ok) {
+        const mensajeNuevo = await res.json();
+        setMensajes(prev => [...prev, mensajeNuevo]);
+        setNuevoMensaje('');
+        // Recargar chats para actualizar último mensaje
+        cargarDatos();
+      }
+    } catch (error) {
+      console.error("Error enviando mensaje:", error);
+      Alert.alert("Error", "No se pudo enviar el mensaje");
+    }
+  };
+
+  // --- FUNCIONES DE CALIFICACIONES ---
+  const abrirCalificar = (transaccion: Transaccion) => {
+    setMostrarCalificar(transaccion);
+    setCalificacionEstrellas(5);
+    setCalificacionComentario('');
+  };
+
+  const enviarCalificacion = async () => {
+    if (!mostrarCalificar || !usuario) return;
+
+    try {
+      const res = await fetch(`${URL_BASE}/calificaciones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transaccion_id: mostrarCalificar.id,
+          calificado_id: mostrarCalificar.vendedorId === usuario.id ? mostrarCalificar.compradorId : mostrarCalificar.vendedorId,
+          calificador_id: usuario.id,
+          estrellas: calificacionEstrellas,
+          comentario: calificacionComentario.trim()
+        })
+      });
+
+      if (res.ok) {
+        Alert.alert("¡Éxito!", "Calificación enviada correctamente");
+        setMostrarCalificar(null);
+        cargarDatos();
+      } else {
+        const error = await res.json();
+        Alert.alert("Error", error.detail || "No se pudo enviar la calificación");
+      }
+    } catch (error) {
+      console.error("Error enviando calificación:", error);
+      Alert.alert("Error", "No se pudo enviar la calificación");
+    }
+  };
+
+  // --- FUNCIONES DE FOTO DE PERFIL ---
+  const seleccionarFotoPerfil = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para seleccionar una foto de perfil');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setFotoPerfil(result.assets[0].uri);
+        await subirFotoPerfil(result.assets[0]);
+      }
+    } catch (error) {
+      console.error('Error seleccionando foto:', error);
+      Alert.alert('Error', 'No se pudo seleccionar la foto');
+    }
+  };
+
+  const tomarFotoPerfil = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso requerido', 'Necesitamos acceso a la cámara para tomar una foto');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setFotoPerfil(result.assets[0].uri);
+        await subirFotoPerfil(result.assets[0]);
+      }
+    } catch (error) {
+      console.error('Error tomando foto:', error);
+      Alert.alert('Error', 'No se pudo tomar la foto');
+    }
+  };
+
+  const subirFotoPerfil = async (asset: any) => {
+    if (!usuario) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('foto_perfil', {
+        uri: asset.uri,
+        type: 'image/jpeg',
+        name: `perfil_${usuario.id}.jpg`,
+      } as any);
+
+      const res = await fetch(`${URL_BASE}/usuarios/${usuario.id}/foto-perfil`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (res.ok) {
+        Alert.alert('¡Éxito!', 'Foto de perfil actualizada');
+        cargarDatos(); // Recargar datos del usuario
+      } else {
+        Alert.alert('Error', 'No se pudo subir la foto de perfil');
+      }
+    } catch (error) {
+      console.error('Error subiendo foto:', error);
+      Alert.alert('Error', 'No se pudo subir la foto de perfil');
+    }
+  };
+
+  const renderStars = (rating: number, interactive: boolean = false, onRate?: (stars: number) => void) => {
+    return (
+      <View style={styles.starsContainer}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <TouchableOpacity
+            key={star}
+            disabled={!interactive}
+            onPress={() => onRate && onRate(star)}
+          >
+            <Text style={[styles.star, rating >= star && styles.starFilled]}>
+              {rating >= star ? '⭐' : '☆'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
   };
 
   // --- COMPONENTE RenderHistorial ---
@@ -467,14 +642,28 @@ export default function App() {
 
       <Text style={styles.sectionTitle}>💰 Mis Ventas/Intercambios</Text>
       {transacciones.filter(t => t.vendedorId === usuario?.id && t.estado === 'completado').length > 0 ? (
-        transacciones.filter(t => t.vendedorId === usuario?.id && t.estado === 'completado').map(trans => (
-          <View key={trans.id} style={styles.transaccionCard}>
-            <Text style={styles.transaccionTitulo}>{trans.libroTitulo}</Text>
-            <Text style={styles.transaccionInfo}>Comprador: {trans.compradorNombre}</Text>
-            <Text style={styles.transaccionInfo}>Tipo: {trans.tipo}</Text>
-            <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
-          </View>
-        ))
+        transacciones.filter(t => t.vendedorId === usuario?.id && t.estado === 'completado').map(trans => {
+          const yaCalificado = calificaciones.some(c => c.transaccionId === trans.id && c.calificadorId === usuario?.id);
+          return (
+            <View key={trans.id} style={styles.transaccionCard}>
+              <Text style={styles.transaccionTitulo}>{trans.libroTitulo}</Text>
+              <Text style={styles.transaccionInfo}>Comprador: {trans.compradorNombre}</Text>
+              <Text style={styles.transaccionInfo}>Tipo: {trans.tipo}</Text>
+              <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
+              {!yaCalificado && (
+                <TouchableOpacity 
+                  style={styles.btnCalificar}
+                  onPress={() => abrirCalificar(trans)}
+                >
+                  <Text style={styles.btnCalificarText}>⭐ Calificar Comprador</Text>
+                </TouchableOpacity>
+              )}
+              {yaCalificado && (
+                <Text style={styles.yaCalificadoText}>✓ Ya calificado</Text>
+              )}
+            </View>
+          );
+        })
       ) : (
         <Text style={styles.noDataText}>No hay ventas o intercambios realizados</Text>
       )}
@@ -540,21 +729,27 @@ export default function App() {
 
   // --- COMPONENTE RenderChats ---
   const RenderChats = () => (
-    <FlatList
-      data={chats}
-      keyExtractor={(item) => item.id.toString()}
-      style={styles.content}
-      renderItem={({item}) => (
-        <View style={styles.chatItem}>
-          <View style={styles.chatItemContent}>
-            <Text style={styles.chatItemTitulo}>{item.libroTitulo}</Text>
-            <Text style={styles.chatItemMsg}>{item.ultimoMensaje}</Text>
-            <Text style={styles.chatItemFecha}>{new Date(item.ultimaFecha).toLocaleDateString()}</Text>
-          </View>
-        </View>
-      )}
-      ListEmptyComponent={<Text style={styles.noDataText}>No hay conversaciones activas</Text>}
-    />
+    <View style={styles.content}>
+      <Text style={styles.sectionTitle}>💬 Mis Conversaciones</Text>
+      <FlatList
+        data={chats}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({item}) => (
+          <TouchableOpacity 
+            style={styles.chatItem}
+            onPress={() => abrirChat(item)}
+          >
+            <View style={styles.chatItemContent}>
+              <Text style={styles.chatItemTitulo}>{item.libroTitulo}</Text>
+              <Text style={styles.chatItemMsg} numberOfLines={1}>{item.ultimoMensaje}</Text>
+              <Text style={styles.chatItemFecha}>{new Date(item.ultimaFecha).toLocaleDateString()}</Text>
+            </View>
+            <Text style={styles.chatArrow}>▶</Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={<Text style={styles.noDataText}>No tienes conversaciones activas</Text>}
+      />
+    </View>
   );
 
   const getEstadoColor = (estado: string) => {
@@ -571,9 +766,28 @@ export default function App() {
   const RenderPerfil = () => (
     <ScrollView style={styles.content}>
       <View style={styles.perfilCard}>
-        <View style={styles.avatarLarge}>
-          <Text style={styles.avatarTxt}>{usuario?.nombre?.[0]}</Text>
-        </View>
+        <TouchableOpacity style={styles.avatarContainer} onPress={() => {
+          Alert.alert(
+            'Cambiar foto de perfil',
+            '¿Cómo quieres cambiar tu foto?',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Tomar foto', onPress: tomarFotoPerfil },
+              { text: 'Seleccionar de galería', onPress: seleccionarFotoPerfil },
+            ]
+          );
+        }}>
+          {fotoPerfil ? (
+            <Image source={{ uri: fotoPerfil }} style={styles.avatarLarge} />
+          ) : (
+            <View style={styles.avatarLarge}>
+              <Text style={styles.avatarTxt}>{usuario?.nombre?.[0]}</Text>
+            </View>
+          )}
+          <View style={styles.editIcon}>
+            <Text style={styles.editIconText}>📷</Text>
+          </View>
+        </TouchableOpacity>
         <Text style={styles.perfilNombre}>{usuario?.nombre}</Text>
         <Text style={styles.perfilCarrera}>{usuario?.carrera} • {usuario?.semestre} Semestre</Text>
         
@@ -706,6 +920,100 @@ export default function App() {
                   <Text style={styles.btnCerrarText}>Volver al Catálogo</Text>
                 </TouchableOpacity>
               </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL CHAT */}
+      <Modal visible={!!chatActivo} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.chatModalContent}>
+            <View style={styles.chatHeader}>
+              <Text style={styles.chatHeaderTitle}>{chatActivo?.libroTitulo}</Text>
+              <TouchableOpacity onPress={() => setChatActivo(null)}>
+                <Text style={styles.chatCloseBtn}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={mensajes}
+              keyExtractor={(item) => item.id.toString()}
+              style={styles.chatMessages}
+              renderItem={({item}) => (
+                <View style={[
+                  styles.messageItem,
+                  item.emisorId === usuario?.id ? styles.messageOwn : styles.messageOther
+                ]}>
+                  {item.emisorId !== usuario?.id && (
+                    <Text style={styles.messageSender}>{item.emisorNombre}:</Text>
+                  )}
+                  <Text style={[styles.messageText, item.emisorId === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
+                  <Text style={styles.messageTime}>
+                    {new Date(item.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </Text>
+                </View>
+              )}
+              ListEmptyComponent={<Text style={styles.noMessagesText}>No hay mensajes aún</Text>}
+            />
+
+            <View style={styles.chatInputContainer}>
+              <TextInput
+                style={styles.chatInput}
+                placeholder="Escribe un mensaje..."
+                value={nuevoMensaje}
+                onChangeText={setNuevoMensaje}
+                multiline
+              />
+              <TouchableOpacity style={styles.chatSendBtn} onPress={enviarMensaje}>
+                <Text style={styles.chatSendText}>📤</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL CALIFICACIÓN */}
+      <Modal visible={!!mostrarCalificar} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.calificarModalContent}>
+            <Text style={styles.calificarTitle}>⭐ Calificar Usuario</Text>
+            {mostrarCalificar && (
+              <>
+                <Text style={styles.calificarInfo}>
+                  Califica tu experiencia con {mostrarCalificar.vendedorId === usuario?.id ? mostrarCalificar.compradorNombre : mostrarCalificar.vendedorNombre}
+                </Text>
+                <Text style={styles.calificarLibro}>"{mostrarCalificar.libroTitulo}"</Text>
+
+                <View style={styles.calificarStars}>
+                  <Text style={styles.calificarLabel}>Estrellas:</Text>
+                  {renderStars(calificacionEstrellas, true, setCalificacionEstrellas)}
+                </View>
+
+                <TextInput
+                  style={styles.calificarComentario}
+                  placeholder="Comentario opcional..."
+                  value={calificacionComentario}
+                  onChangeText={setCalificacionComentario}
+                  multiline
+                  numberOfLines={3}
+                />
+
+                <View style={styles.calificarActions}>
+                  <TouchableOpacity 
+                    style={[styles.calificarBtn, styles.btnCancelar]}
+                    onPress={() => setMostrarCalificar(null)}
+                  >
+                    <Text style={styles.btnCancelarText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.calificarBtn, styles.btnEnviar]}
+                    onPress={enviarCalificacion}
+                  >
+                    <Text style={styles.btnEnviarText}>Enviar Calificación</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
           </View>
         </View>
@@ -866,22 +1174,22 @@ export default function App() {
       {!tecladoVisible && (
         <View style={styles.tabBar}>
           <TouchableOpacity style={styles.tabItem} onPress={() => setSeccionActual('inicio')}>
-            <Text style={[styles.tabText, seccionActual === 'inicio' && styles.tabActive]}>🏠 Inicio</Text>
+            <Text style={[styles.tabText, seccionActual === 'inicio' && styles.tabActive]}>🏠</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.tabItem} onPress={() => setSeccionActual('inventario')}>
-            <Text style={[styles.tabText, seccionActual === 'inventario' && styles.tabActive]}>📚 Catálogo</Text>
+            <Text style={[styles.tabText, seccionActual === 'inventario' && styles.tabActive]}>📚</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.tabItem} onPress={() => { setEditandoId(null); setFormLibro({...formLibro, imagenes: []}); setSeccionActual('registro'); }}>
-            <Text style={[styles.tabText, seccionActual === 'registro' && styles.tabActive]}>➕ Subir</Text>
+            <Text style={[styles.tabText, seccionActual === 'registro' && styles.tabActive]}>➕</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.tabItem} onPress={() => setSeccionActual('misPublicaciones')}>
-            <Text style={[styles.tabText, seccionActual === 'misPublicaciones' && styles.tabActive]}>📖 Mis Libros</Text>
+          <TouchableOpacity style={styles.tabItem} onPress={() => setSeccionActual('chat')}>
+            <Text style={[styles.tabText, seccionActual === 'chat' && styles.tabActive]}>💬</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.tabItem} onPress={() => setSeccionActual('historial')}>
-            <Text style={[styles.tabText, seccionActual === 'historial' && styles.tabActive]}>📊 Historial</Text>
+            <Text style={[styles.tabText, seccionActual === 'historial' && styles.tabActive]}>📊</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.tabItem} onPress={() => setSeccionActual('perfil')}>
-            <Text style={[styles.tabText, seccionActual === 'perfil' && styles.tabActive]}>👤 Perfil</Text>
+            <Text style={[styles.tabText, seccionActual === 'perfil' && styles.tabActive]}>👤</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -1011,11 +1319,55 @@ const styles = StyleSheet.create({
   btnRechazar: { backgroundColor: '#F44336' },
   btnText: { color: '#fff', fontFamily: 'Montserrat-Bold' },
 
-  chatItem: { backgroundColor: '#fff', padding: 15, marginBottom: 10, borderRadius: 15, elevation: 2 },
+  chatItem: { backgroundColor: '#fff', padding: 15, marginBottom: 10, borderRadius: 15, elevation: 2, flexDirection: 'row', alignItems: 'center' },
   chatItemContent: { flex: 1 },
   chatItemTitulo: { fontSize: 16, fontFamily: 'Montserrat-Bold', marginBottom: 5 },
   chatItemMsg: { fontSize: 12, color: '#666', marginBottom: 5 },
   chatItemFecha: { fontSize: 10, color: '#999' },
+  chatArrow: { fontSize: 16, color: Colors.primary },
+
+  chatModalContent: { backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, height: '90%', padding: 0 },
+  chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  chatHeaderTitle: { fontSize: 18, fontFamily: 'Montserrat-Bold', color: Colors.primary, flex: 1 },
+  chatCloseBtn: { fontSize: 24, color: '#666', padding: 5 },
+  chatMessages: { flex: 1, padding: 15 },
+  messageItem: { marginBottom: 15, maxWidth: '80%' },
+  messageOwn: { alignSelf: 'flex-end', backgroundColor: Colors.primary, borderRadius: 15, padding: 10 },
+  messageOther: { alignSelf: 'flex-start', backgroundColor: '#f0f0f0', borderRadius: 15, padding: 10 },
+  messageSender: { fontSize: 12, color: '#666', fontFamily: 'OpenSans-SemiBold', marginBottom: 5 },
+  messageOwnText: { color: '#fff' },
+  messageOtherText: { color: '#333' },
+  messageTime: { fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 5, textAlign: 'right' },
+  noMessagesText: { textAlign: 'center', color: '#999', padding: 20, fontFamily: 'OpenSans-Regular' },
+  chatInputContainer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'flex-end' },
+  chatInput: { flex: 1, backgroundColor: '#f8f9fa', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, marginRight: 10, fontFamily: 'OpenSans-Regular', maxHeight: 100 },
+  chatSendBtn: { backgroundColor: Colors.primary, width: 45, height: 45, borderRadius: 22.5, justifyContent: 'center', alignItems: 'center' },
+  chatSendText: { fontSize: 18 },
+
+  calificarModalContent: { backgroundColor: '#fff', margin: 20, borderRadius: 25, padding: 25, elevation: 5 },
+  calificarTitle: { fontSize: 24, fontFamily: 'Montserrat-Bold', color: Colors.primary, textAlign: 'center', marginBottom: 20 },
+  calificarInfo: { fontSize: 16, fontFamily: 'OpenSans-SemiBold', textAlign: 'center', marginBottom: 10 },
+  calificarLibro: { fontSize: 14, fontFamily: 'OpenSans-Regular', textAlign: 'center', color: '#666', marginBottom: 25 },
+  calificarStars: { alignItems: 'center', marginBottom: 20 },
+  calificarLabel: { fontSize: 16, fontFamily: 'OpenSans-SemiBold', marginBottom: 10 },
+  starsContainer: { flexDirection: 'row', justifyContent: 'center' },
+  star: { fontSize: 30, color: '#ddd', marginHorizontal: 5 },
+  starFilled: { color: '#FFD700' },
+  calificarComentario: { backgroundColor: '#f8f9fa', borderRadius: 15, padding: 15, fontFamily: 'OpenSans-Regular', textAlignVertical: 'top', marginBottom: 25 },
+  calificarActions: { flexDirection: 'row', gap: 15 },
+  calificarBtn: { flex: 1, padding: 15, borderRadius: 12, alignItems: 'center' },
+  btnCancelar: { backgroundColor: '#f0f0f0' },
+  btnCancelarText: { color: '#666', fontFamily: 'Montserrat-Bold' },
+  btnEnviar: { backgroundColor: Colors.primary },
+  btnEnviarText: { color: '#fff', fontFamily: 'Montserrat-Bold' },
+
+  btnCalificar: { backgroundColor: '#FFD700', padding: 10, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  btnCalificarText: { color: '#333', fontFamily: 'Montserrat-Bold', fontSize: 12 },
+  yaCalificadoText: { color: '#4CAF50', fontFamily: 'OpenSans-SemiBold', fontSize: 12, textAlign: 'center', marginTop: 10 },
+
+  avatarContainer: { position: 'relative', alignSelf: 'center', marginBottom: 15 },
+  editIcon: { position: 'absolute', bottom: 0, right: 0, backgroundColor: Colors.primary, borderRadius: 15, width: 30, height: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  editIconText: { fontSize: 14 },
 
   tabBar: { flexDirection: 'row', height: 70, backgroundColor: Colors.primary, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingBottom: 10, paddingTop: 10 },
   tabItem: { flex: 1, justifyContent: 'center', alignItems: 'center' },
