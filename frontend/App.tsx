@@ -164,13 +164,6 @@ export default function App() {
         fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`, fetchConfig),
         fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`, fetchConfig),
         fetch(`${URL_BASE}/usuarios/${usuario.id}/calificaciones`, fetchConfig)
-        fetch(`${URL_BASE}/libros`),
-        fetch(`${URL_BASE}/libros/destacados`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/transacciones`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/calificaciones`)
       ]);
       
       clearTimeout(timeoutId);
@@ -186,11 +179,8 @@ export default function App() {
       // Cargar foto de perfil
       if (usuario.foto_perfil) {
         setFotoPerfil(`${URL_BASE}/uploads/${usuario.foto_perfil}`);
-      if (usuario.fotoPerfil) {
-        setFotoPerfil(`${URL_BASE}/uploads/${usuario.fotoPerfil}`);
       }
     } catch (error: any) {
-    } catch (error) {
       console.error("Error al cargar datos:", error);
       if (error.name === 'AbortError') Alert.alert("Servidor Lento", "El servidor de Azure está tardando en responder. Intenta de nuevo en unos segundos.");
     } finally {
