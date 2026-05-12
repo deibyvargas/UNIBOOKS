@@ -26,12 +26,10 @@
       },
       "package": "com.unibooks.app"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
       "expo-font"
     ],
+    "platforms": ["ios", "android"],
     "extra": {
       "eas": {
         "projectId": "b3b97304-2215-431e-a9d5-553269a6e408"

@@ -9,6 +9,10 @@ export interface Libro {
   imagen_url: string | null;
   descripcion?: string;
   estado?: string;
+  categoria?: string;
+  destacado?: boolean;
+  tipo_publicacion?: 'venta' | 'intercambio' | 'ambos';
+  usuario_id?: number;
 }
 
 // 👤 Definición de un Usuario

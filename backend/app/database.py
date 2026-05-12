@@ -1,4 +1,5 @@
 import os
+import urllib.parse  # <--- ESTA ES LA LÍNEA QUE FALTA
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -11,6 +12,7 @@ load_dotenv()
 # 1. Azure nos dará la URL en la variable de entorno 'DATABASE_URL'. 
 # 2. Si no existe, usará SQLite local para pruebas rápidas.
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./DeibyVargas.DB")
+db_type = "Azure SQL (Cloud)" if "unibooks.database.windows.net" in SQLALCHEMY_DATABASE_URL else "SQLite (Local)"
 
 engine_kwargs = {
     "connect_args": {},
@@ -45,6 +47,7 @@ def inicializar_base_de_datos():
         print("--- SISTEMA UNIBOOKS ---")
         print(f"✅ Base de datos conectada: {SQLALCHEMY_DATABASE_URL.split(':')[0]}")
         print(f"📡 Servidor: {host}")
+
         print("-------------------------")
     except Exception as e:
-        print(f"❌ Error al conectar la base de datos: {e}")
+        print(f"❌ Error al inicializar las tablas: {e}")
