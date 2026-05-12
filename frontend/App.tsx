@@ -117,6 +117,14 @@ export default function App() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
 
+  // --- ESTADOS FALTANTES ---
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
+  const [notificaciones, setNotificaciones] = useState<any[]>([]);
+  const [mostrarCalificar, setMostrarCalificar] = useState<Transaccion | null>(null);
+  const [calificacionEstrellas, setCalificacionEstrellas] = useState(5);
+  const [calificacionComentario, setCalificacionComentario] = useState('');
+
+
   // --- ESTADOS DE FORMULARIOS ---
   const [formLibro, setFormLibro] = useState({
     titulo: '', autor: '', precio: '', descripcion: '', categoria: 'Ingeniería',
