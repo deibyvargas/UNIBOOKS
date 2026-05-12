@@ -23,7 +23,7 @@ import {
 const URL_PRODUCCION = 'https://unibooks-g3cjb8fmewd3efe8.canadacentral-01.azurewebsites.net';
 const URL_LOCAL = 'http://192.168.56.1:8000';
 
-const URL_BASE = URL_PRODUCCION; // Ahora la App buscará el servidor en Azure
+const URL_BASE = URL_LOCAL; // Cambiado a LOCAL para desarrollo activo
 
 
 // --- TIPOS ---
@@ -672,7 +672,6 @@ export default function App() {
       {transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').length > 0 ? (
         transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').map(trans => {
           const yaCalificado = Array.isArray(calificaciones) && calificaciones.some(c => c.transaccion_id === trans.id && c.calificador_id === usuario?.id);
-          const yaCalificado = calificaciones.some(c => c.transaccion_id === trans.id && c.calificador_id === usuario?.id);
           return (
             <View key={trans.id} style={styles.transaccionCard}>
               <Text style={styles.transaccionTitulo}>{trans.libro_titulo}</Text>
@@ -975,7 +974,6 @@ export default function App() {
                     <Text style={styles.messageSender}>{item.emisor_nombre}:</Text>
                   )}
                   <Text style={[styles.messageBaseText, item.emisor_id === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
-                  <Text style={[styles.messageText, item.emisor_id === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
                   <Text style={styles.messageTime}>
                     {item.fecha ? new Date(item.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
                   </Text>
