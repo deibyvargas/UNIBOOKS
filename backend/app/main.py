@@ -568,7 +568,8 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
             "carrera": user.carrera,
             "semestre": user.semestre,
             "reputacion": user.reputacion,
-            "transacciones": transacciones_completadas
+            "transacciones": transacciones_completadas,
+            "foto_perfil": user.foto_perfil
         }
     }
 

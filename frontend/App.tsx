@@ -671,7 +671,7 @@ export default function App() {
       <Text style={styles.sectionTitle}>💰 Mis Ventas/Intercambios</Text>
       {transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').length > 0 ? (
         transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').map(trans => {
-          const yaCalificado = calificaciones.some(c => c.transaccion_id === trans.id && c.calificador_id === usuario?.id);
+          const yaCalificado = Array.isArray(calificaciones) && calificaciones.some(c => c.transaccion_id === trans.id && c.calificador_id === usuario?.id);
           return (
             <View key={trans.id} style={styles.transaccionCard}>
               <Text style={styles.transaccionTitulo}>{trans.libro_titulo}</Text>
