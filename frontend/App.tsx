@@ -157,13 +157,6 @@ export default function App() {
       const fetchConfig = { signal: controller.signal };
 
       const [resLibros, resDestacados, resMisPublicaciones, resTransacciones, resSolicitudes, resChats, resCalificaciones] = await Promise.all([
-        fetch(`${URL_BASE}/libros`),
-        fetch(`${URL_BASE}/libros/destacados`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/transacciones`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/calificaciones`)
         fetch(`${URL_BASE}/libros`, fetchConfig),
         fetch(`${URL_BASE}/libros/destacados`, fetchConfig),
         fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`, fetchConfig),
@@ -184,10 +177,9 @@ export default function App() {
       if (resCalificaciones.ok) setCalificaciones(await resCalificaciones.json());
 
       // Cargar foto de perfil
-      if (usuario.fotoPerfil) {
-        setFotoPerfil(`${URL_BASE}/uploads/${usuario.fotoPerfil}`);
+      if (usuario.foto_perfil) {
+        setFotoPerfil(`${URL_BASE}/uploads/${usuario.foto_perfil}`);
       }
-    } catch (error) {
     } catch (error: any) {
       console.error("Error al cargar datos:", error);
       if (error.name === 'AbortError') Alert.alert("Servidor Lento", "El servidor de Azure está tardando en responder. Intenta de nuevo en unos segundos.");
