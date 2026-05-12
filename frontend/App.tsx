@@ -19,8 +19,11 @@ import {
 } from '@expo-google-fonts/open-sans';
 
 // --- CONFIGURACIÓN GLOBAL ---
-const URL_BASE = 'https://elodia-nonhereditable-kittie.ngrok-free.dev';
-const HEADERS_NGROK = { 'ngrok-skip-browser-warning': 'true' };
+// Cambia a la URL de Azure cuando hayas subido (deployed) el código del backend al App Service
+const URL_PRODUCCION = 'https://unibooks-g3cjb8fmewd3efe8.canadacentral-01.azurewebsites.net';
+const URL_LOCAL = 'http://192.168.56.1:8000';
+
+const URL_BASE = URL_PRODUCCION; // Ahora la App buscará el servidor en Azure
 
 // --- TIPOS ---
 type SeccionActual = 'inicio' | 'inventario' | 'registro' | 'perfil' | 'misPublicaciones' | 'historial' | 'chat';
@@ -30,12 +33,12 @@ type TipoPublicacion = 'venta' | 'intercambio' | 'ambos';
 // Interfaces
 interface Transaccion {
   id: number;
-  libroId: number;
-  libroTitulo: string;
-  compradorId: number;
-  compradorNombre: string;
-  vendedorId: number;
-  vendedorNombre: string;
+  libro_id: number;
+  libro_titulo: string;
+  comprador_id: number;
+  comprador_nombre: string;
+  vendedor_id: number;
+  vendedor_nombre: string;
   tipo: 'compra' | 'intercambio';
   estado: 'pendiente' | 'aceptado' | 'rechazado' | 'completado';
   precio?: number;
@@ -44,9 +47,9 @@ interface Transaccion {
 
 interface Calificacion {
   id: number;
-  transaccionId: number;
-  calificadoId: number;
-  calificadorId: number;
+  transaccion_id: number;
+  calificado_id: number;
+  calificador_id: number;
   estrellas: number;
   comentario: string;
   fecha: string;
@@ -54,9 +57,9 @@ interface Calificacion {
 
 interface Mensaje {
   id: number;
-  chatId: number;
-  emisorId: number;
-  emisorNombre: string;
+  chat_id: number;
+  emisor_id: number;
+  emisor_nombre: string;
   mensaje: string;
   fecha: string;
   leido: boolean;
@@ -64,12 +67,12 @@ interface Mensaje {
 
 interface Chat {
   id: number;
-  libroId: number;
-  libroTitulo: string;
-  usuario1Id: number;
-  usuario2Id: number;
-  ultimoMensaje: string;
-  ultimaFecha: string;
+  libro_id: number;
+  libro_titulo: string;
+  usuario1_id: number;
+  usuario2_id: number;
+  ultimo_mensaje: string;
+  ultima_fecha: string;
 }
 
 export default function App() {
@@ -140,12 +143,12 @@ export default function App() {
     setLoading(true);
     try {
       const [resLibros, resDestacados, resMisPublicaciones, resTransacciones, resSolicitudes, resChats] = await Promise.all([
-        fetch(`${URL_BASE}/libros`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/libros/destacados`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/transacciones`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`, { headers: HEADERS_NGROK }),
-        fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`, { headers: HEADERS_NGROK })
+        fetch(`${URL_BASE}/libros`),
+        fetch(`${URL_BASE}/libros/destacados`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/transacciones`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`)
       ]);
       if (resLibros.ok) setLibros(await resLibros.json());
       if (resDestacados.ok) setLibrosDestacados(await resDestacados.json());
@@ -166,39 +169,44 @@ export default function App() {
   const validarCorreoUdec = (email: string) => email.endsWith('@ucundinamarca.edu.co');
 
   const manejarAuth = async () => {
-    if (!formUser.correo || !formUser.password) return Alert.alert("Error", "Completa los campos.");
+    const correoLimpio = formUser.correo.trim().toLowerCase();
+    const passwordLimpia = formUser.password;
+
+    if (!correoLimpio || !passwordLimpia) return Alert.alert("Error", "Completa los campos.");
     
     if (esRegistro) {
-      if (!validarCorreoUdec(formUser.correo)) {
-        return Alert.alert("Acceso Restringido", "Usa tu correo @ucundinamarca.edu.co");
+      if (!validarCorreoUdec(correoLimpio)) {
+        return Alert.alert("Acceso Restringido", "Para registrarte en Azure SQL, debes usar tu correo @ucundinamarca.edu.co");
       }
       setLoading(true);
       try {
         const res = await fetch(`${URL_BASE}/registro`, {
           method: 'POST', 
-          headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' }, 
-          body: JSON.stringify(formUser)
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ ...formUser, correo: correoLimpio })
         });
+        
+        const data = await res.json();
         if (res.ok) { 
-          Alert.alert("¡Éxito!", "Cuenta creada. Ahora inicia sesión."); 
+          Alert.alert("¡Registro Exitoso!", "Tu cuenta ha sido creada en la base de datos de Azure. Ahora puedes iniciar sesión."); 
           setEsRegistro(false);
           setFormUser({ nombre: '', correo: '', password: '', carrera: '', semestre: '' });
         } else {
-          const error = await res.json();
-          Alert.alert("Error", error.detail || "No se pudo crear la cuenta");
+          Alert.alert("Error del Servidor", data.detail || "El servidor rechazó el registro.");
         }
-      } catch (e) { 
-        Alert.alert("Error", "Fallo de conexión."); 
+      } catch (e: any) { 
+        console.error(e);
+        Alert.alert("Error de Conexión", `No se pudo contactar al backend en: ${URL_BASE}\n\nDetalle: ${e.message}`); 
       } finally { setLoading(false); }
     } else {
       setLoading(true);
       try {
         const res = await fetch(`${URL_BASE}/login`, {
           method: 'POST',
-          headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            correo: formUser.correo,
-            password: formUser.password
+            correo: correoLimpio,
+            password: passwordLimpia
           })
         });
         
@@ -262,7 +270,7 @@ export default function App() {
       { text: "Cancelar" },
       { text: "Eliminar", onPress: async () => {
         try {
-          const res = await fetch(`${URL_BASE}/libros/${id}`, { method: 'DELETE', headers: HEADERS_NGROK });
+          const res = await fetch(`${URL_BASE}/libros/${id}`, { method: 'DELETE' });
           if (res.ok) { 
             cargarDatos(); 
             setLibroSeleccionado(null);
@@ -336,8 +344,7 @@ export default function App() {
         method: editandoId ? 'PUT' : 'POST', 
         body: formData,
         headers: {
-          'Accept': 'application/json',
-          ...HEADERS_NGROK
+          'Accept': 'application/json'
         }
       });
       
@@ -387,7 +394,7 @@ export default function App() {
             try {
               const res = await fetch(`${URL_BASE}/solicitudes`, {
                 method: 'POST',
-                headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   libro_id: libro.id,
                   solicitante_id: usuario.id,
@@ -422,7 +429,7 @@ export default function App() {
             try {
               const res = await fetch(`${URL_BASE}/solicitudes/${solicitud.id}`, {
                 method: 'PUT',
-                headers: { ...HEADERS_NGROK, 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: aceptar ? 'aceptado' : 'rechazado' })
               });
               if (res.ok) {
@@ -453,11 +460,11 @@ export default function App() {
   const RenderHistorial = () => (
     <ScrollView style={styles.content}>
       <Text style={styles.sectionTitle}>📦 Mis Compras</Text>
-      {transacciones.filter(t => t.compradorId === usuario?.id && t.estado === 'completado').length > 0 ? (
-        transacciones.filter(t => t.compradorId === usuario?.id && t.estado === 'completado').map(trans => (
+      {transacciones.filter(t => t.comprador_id === usuario?.id && t.estado === 'completado').length > 0 ? (
+        transacciones.filter(t => t.comprador_id === usuario?.id && t.estado === 'completado').map(trans => (
           <View key={trans.id} style={styles.transaccionCard}>
-            <Text style={styles.transaccionTitulo}>{trans.libroTitulo}</Text>
-            <Text style={styles.transaccionInfo}>Vendedor: {trans.vendedorNombre}</Text>
+            <Text style={styles.transaccionTitulo}>{trans.libro_titulo}</Text>
+            <Text style={styles.transaccionInfo}>Vendedor: {trans.vendedor_nombre}</Text>
             <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
           </View>
         ))
@@ -466,11 +473,11 @@ export default function App() {
       )}
 
       <Text style={styles.sectionTitle}>💰 Mis Ventas/Intercambios</Text>
-      {transacciones.filter(t => t.vendedorId === usuario?.id && t.estado === 'completado').length > 0 ? (
-        transacciones.filter(t => t.vendedorId === usuario?.id && t.estado === 'completado').map(trans => (
+      {transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').length > 0 ? (
+        transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').map(trans => (
           <View key={trans.id} style={styles.transaccionCard}>
-            <Text style={styles.transaccionTitulo}>{trans.libroTitulo}</Text>
-            <Text style={styles.transaccionInfo}>Comprador: {trans.compradorNombre}</Text>
+            <Text style={styles.transaccionTitulo}>{trans.libro_titulo}</Text>
+            <Text style={styles.transaccionInfo}>Comprador: {trans.comprador_nombre}</Text>
             <Text style={styles.transaccionInfo}>Tipo: {trans.tipo}</Text>
             <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
           </View>
@@ -483,8 +490,8 @@ export default function App() {
       {solicitudesPendientes.filter(s => s.estado === 'pendiente').length > 0 ? (
         solicitudesPendientes.filter(s => s.estado === 'pendiente').map(solicitud => (
           <View key={solicitud.id} style={styles.solicitudCard}>
-            <Text style={styles.transaccionTitulo}>{solicitud.libroTitulo}</Text>
-            <Text style={styles.transaccionInfo}>Solicitante: {solicitud.compradorNombre}</Text>
+            <Text style={styles.transaccionTitulo}>{solicitud.libro_titulo}</Text>
+            <Text style={styles.transaccionInfo}>Solicitante: {solicitud.comprador_nombre}</Text>
             <Text style={styles.transaccionInfo}>Tipo: {solicitud.tipo}</Text>
             <View style={styles.solicitudActions}>
               <TouchableOpacity 
@@ -547,9 +554,9 @@ export default function App() {
       renderItem={({item}) => (
         <View style={styles.chatItem}>
           <View style={styles.chatItemContent}>
-            <Text style={styles.chatItemTitulo}>{item.libroTitulo}</Text>
-            <Text style={styles.chatItemMsg}>{item.ultimoMensaje}</Text>
-            <Text style={styles.chatItemFecha}>{new Date(item.ultimaFecha).toLocaleDateString()}</Text>
+            <Text style={styles.chatItemTitulo}>{item.libro_titulo}</Text>
+            <Text style={styles.chatItemMsg}>{item.ultimo_mensaje}</Text>
+            <Text style={styles.chatItemFecha}>{new Date(item.ultima_fecha).toLocaleDateString()}</Text>
           </View>
         </View>
       )}
