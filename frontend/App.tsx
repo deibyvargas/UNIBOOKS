@@ -5,11 +5,10 @@ import {
   KeyboardAvoidingView, Platform, Keyboard, Modal, Switch 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors } from './constants/Colors'; 
+import Colors from './constants/Colors'; 
 import { Libro } from './types';
-
+import { useFonts } from 'expo-font';
 import { 
-  useFonts, 
   Montserrat_900Black, 
   Montserrat_700Bold 
 } from '@expo-google-fonts/montserrat';
@@ -653,24 +652,29 @@ export default function App() {
   };
 
   // --- COMPONENTE RenderHistorial ---
-  const RenderHistorial = () => (
-    <ScrollView style={styles.content}>
-      <Text style={styles.sectionTitle}>📦 Mis Compras</Text>
-      {transacciones.filter(t => t.comprador_id === usuario?.id && t.estado === 'completado').length > 0 ? (
-        transacciones.filter(t => t.comprador_id === usuario?.id && t.estado === 'completado').map(trans => (
-          <View key={trans.id} style={styles.transaccionCard}>
-            <Text style={styles.transaccionTitulo}>{trans.libro_titulo}</Text>
-            <Text style={styles.transaccionInfo}>Vendedor: {trans.vendedor_nombre}</Text>
-            <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
-          </View>
-        ))
+  const RenderHistorial = () => {
+    const misCompras = transacciones.filter(t => t.comprador_id === usuario?.id && t.estado === 'completado');
+    const misVentas = transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado');
+    const pendientes = solicitudesPendientes.filter(s => s.estado === 'pendiente');
+
+    return (
+      <ScrollView style={styles.content}>
+        <Text style={styles.sectionTitle}>📦 Mis Compras</Text>
+        {misCompras.length > 0 ? (
+          misCompras.map(trans => (
+            <View key={trans.id} style={styles.transaccionCard}>
+              <Text style={styles.transaccionTitulo}>{trans.libro_titulo}</Text>
+              <Text style={styles.transaccionInfo}>Vendedor: {trans.vendedor_nombre}</Text>
+              <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
+            </View>
+          ))
       ) : (
         <Text style={styles.noDataText}>No hay compras realizadas</Text>
       )}
 
       <Text style={styles.sectionTitle}>💰 Mis Ventas/Intercambios</Text>
-      {transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').length > 0 ? (
-        transacciones.filter(t => t.vendedor_id === usuario?.id && t.estado === 'completado').map(trans => {
+      {misVentas.length > 0 ? (
+        misVentas.map(trans => {
           const yaCalificado = Array.isArray(calificaciones) && calificaciones.some(c => c.transaccion_id === trans.id && c.calificador_id === usuario?.id);
           return (
             <View key={trans.id} style={styles.transaccionCard}>
@@ -697,8 +701,8 @@ export default function App() {
       )}
 
       <Text style={styles.sectionTitle}>⏳ Solicitudes Pendientes</Text>
-      {solicitudesPendientes.filter(s => s.estado === 'pendiente').length > 0 ? (
-        solicitudesPendientes.filter(s => s.estado === 'pendiente').map(solicitud => (
+      {pendientes.length > 0 ? (
+        pendientes.map(solicitud => (
           <View key={solicitud.id} style={styles.solicitudCard}>
             <Text style={styles.transaccionTitulo}>{solicitud.libro_titulo}</Text>
             <Text style={styles.transaccionInfo}>Solicitante: {solicitud.comprador_nombre}</Text>
@@ -720,8 +724,9 @@ export default function App() {
       ) : (
         <Text style={styles.noDataText}>No hay solicitudes pendientes</Text>
       )}
-    </ScrollView>
-  );
+      </ScrollView>
+    );
+  };
 
   // --- COMPONENTE RenderMisPublicaciones ---
   const RenderMisPublicaciones = () => (
