@@ -438,7 +438,7 @@ export default function App() {
   const responderSolicitud = (solicitud: Transaccion, aceptar: boolean) => {
     Alert.alert(
       aceptar ? "Aceptar Solicitud" : "Rechazar Solicitud",
-      aceptar ? `¿Confirmas la ${solicitud.tipo} de este libro?` : `¿Rechazar solicitud de ${solicitud.compradorNombre}?`,
+      aceptar ? `¿Confirmas la ${solicitud.tipo} de este libro?` : `¿Rechazar solicitud de ${solicitud.comprador_nombre}?`,
       [
         { text: "Cancelar" },
         { 
@@ -667,7 +667,7 @@ export default function App() {
               <Text style={styles.transaccionTitulo}>{trans.libro_titulo}</Text>
               <Text style={styles.transaccionInfo}>Comprador: {trans.comprador_nombre}</Text>
               <Text style={styles.transaccionInfo}>Tipo: {trans.tipo}</Text>
-              <Text style={styles.transaccionInfo}>Fecha: {new Date(trans.fecha).toLocaleDateString()}</Text>
+              <Text style={styles.transaccionInfo}>Fecha: {trans.fecha ? new Date(trans.fecha).toLocaleDateString() : 'N/A'}</Text>
               {!yaCalificado && (
                 <TouchableOpacity 
                   style={styles.btnCalificar}
@@ -757,7 +757,7 @@ export default function App() {
             <View style={styles.chatItemContent}>
               <Text style={styles.chatItemTitulo}>{item.libro_titulo}</Text>
               <Text style={styles.chatItemMsg} numberOfLines={1}>{item.ultimo_mensaje}</Text>
-              <Text style={styles.chatItemFecha}>{new Date(item.ultima_fecha).toLocaleDateString()}</Text>
+              <Text style={styles.chatItemFecha}>{item.ultima_fecha ? new Date(item.ultima_fecha).toLocaleDateString() : 'N/A'}</Text>
             </View>
             <Text style={styles.chatArrow}>▶</Text>
           </TouchableOpacity>
@@ -965,7 +965,7 @@ export default function App() {
                   )}
                   <Text style={[styles.messageText, item.emisor_id === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
                   <Text style={styles.messageTime}>
-                    {new Date(item.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {item.fecha ? new Date(item.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
                   </Text>
                 </View>
               )}
@@ -996,7 +996,7 @@ export default function App() {
             {mostrarCalificar && (
               <>
                 <Text style={styles.calificarInfo}>
-                  Califica tu experiencia con {mostrarCalificar.vendedor_id === usuario?.id ? mostrarCalificar.comprador_nombre : mostrarCalificar.vendedor_nombre}
+                  Califica tu experiencia con {mostrarCalificar.vendedor_id === usuario?.id ? (mostrarCalificar.comprador_nombre || 'Usuario') : (mostrarCalificar.vendedor_nombre || 'Usuario')}
                 </Text>
                 <Text style={styles.calificarLibro}>"{mostrarCalificar.libro_titulo}"</Text>
 
