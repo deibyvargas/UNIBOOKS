@@ -1372,7 +1372,7 @@ const styles = StyleSheet.create({
   noMessagesText: { textAlign: 'center', color: '#999', padding: 20, fontFamily: 'OpenSans-Regular' },
   chatInputContainer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'flex-end' },
   chatInput: { flex: 1, backgroundColor: '#f8f9fa', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, marginRight: 10, fontFamily: 'OpenSans-Regular', maxHeight: 100 },
-  chatSendBtn: { backgroundColor: Colors.primary, width: 45, height: 45, borderRadius: 22.5, justifyContent: 'center', alignItems: 'center' },
+  chatSendBtn: { backgroundColor: Colors.primary || '#000', width: 45, height: 45, borderRadius: 22.5, justifyContent: 'center', alignItems: 'center' },
   chatSendText: { fontSize: 18 },
 
   calificarModalContent: { backgroundColor: '#fff', margin: 20, borderRadius: 25, padding: 25, elevation: 5 },
