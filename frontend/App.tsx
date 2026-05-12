@@ -150,6 +150,12 @@ export default function App() {
     if (!usuario?.id) return;
     setLoading(true);
     try {
+      // Creamos un controlador de aborto para manejar timeouts
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos de espera
+
+      const fetchConfig = { signal: controller.signal };
+
       const [resLibros, resDestacados, resMisPublicaciones, resTransacciones, resSolicitudes, resChats, resCalificaciones] = await Promise.all([
         fetch(`${URL_BASE}/libros`),
         fetch(`${URL_BASE}/libros/destacados`),
@@ -158,7 +164,17 @@ export default function App() {
         fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`),
         fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`),
         fetch(`${URL_BASE}/usuarios/${usuario.id}/calificaciones`)
+        fetch(`${URL_BASE}/libros`, fetchConfig),
+        fetch(`${URL_BASE}/libros/destacados`, fetchConfig),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/libros`, fetchConfig),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/transacciones`, fetchConfig),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/solicitudes`, fetchConfig),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/chats`, fetchConfig),
+        fetch(`${URL_BASE}/usuarios/${usuario.id}/calificaciones`, fetchConfig)
       ]);
+      
+      clearTimeout(timeoutId);
+
       if (resLibros.ok) setLibros(await resLibros.json());
       if (resDestacados.ok) setLibrosDestacados(await resDestacados.json());
       if (resMisPublicaciones.ok) setMisPublicaciones(await resMisPublicaciones.json());
@@ -172,7 +188,9 @@ export default function App() {
         setFotoPerfil(`${URL_BASE}/uploads/${usuario.fotoPerfil}`);
       }
     } catch (error) {
+    } catch (error: any) {
       console.error("Error al cargar datos:", error);
+      if (error.name === 'AbortError') Alert.alert("Servidor Lento", "El servidor de Azure está tardando en responder. Intenta de nuevo en unos segundos.");
     } finally {
       setLoading(false);
     }
