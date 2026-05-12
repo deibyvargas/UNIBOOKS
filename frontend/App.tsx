@@ -522,7 +522,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transaccion_id: mostrarCalificar.id,
-          calificado_id: mostrarCalificar.vendedorId === usuario.id ? mostrarCalificar.compradorId : mostrarCalificar.vendedorId,
+          calificado_id: mostrarCalificar.vendedor_id === usuario.id ? mostrarCalificar.comprador_id : mostrarCalificar.vendedor_id,
           calificador_id: usuario.id,
           estrellas: calificacionEstrellas,
           comentario: calificacionComentario.trim()
@@ -945,7 +945,7 @@ export default function App() {
         <View style={styles.modalOverlay}>
           <View style={styles.chatModalContent}>
             <View style={styles.chatHeader}>
-              <Text style={styles.chatHeaderTitle}>{chatActivo?.libroTitulo}</Text>
+              <Text style={styles.chatHeaderTitle}>{chatActivo?.libro_titulo}</Text>
               <TouchableOpacity onPress={() => setChatActivo(null)}>
                 <Text style={styles.chatCloseBtn}>✕</Text>
               </TouchableOpacity>
@@ -958,12 +958,12 @@ export default function App() {
               renderItem={({item}) => (
                 <View style={[
                   styles.messageItem,
-                  item.emisorId === usuario?.id ? styles.messageOwn : styles.messageOther
+                  item.emisor_id === usuario?.id ? styles.messageOwn : styles.messageOther
                 ]}>
-                  {item.emisorId !== usuario?.id && (
-                    <Text style={styles.messageSender}>{item.emisorNombre}:</Text>
+                  {item.emisor_id !== usuario?.id && (
+                    <Text style={styles.messageSender}>{item.emisor_nombre}:</Text>
                   )}
-                  <Text style={[styles.messageText, item.emisorId === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
+                  <Text style={[styles.messageText, item.emisor_id === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
                   <Text style={styles.messageTime}>
                     {new Date(item.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                   </Text>
@@ -996,9 +996,9 @@ export default function App() {
             {mostrarCalificar && (
               <>
                 <Text style={styles.calificarInfo}>
-                  Califica tu experiencia con {mostrarCalificar.vendedorId === usuario?.id ? mostrarCalificar.compradorNombre : mostrarCalificar.vendedorNombre}
+                  Califica tu experiencia con {mostrarCalificar.vendedor_id === usuario?.id ? mostrarCalificar.comprador_nombre : mostrarCalificar.vendedor_nombre}
                 </Text>
-                <Text style={styles.calificarLibro}>"{mostrarCalificar.libroTitulo}"</Text>
+                <Text style={styles.calificarLibro}>"{mostrarCalificar.libro_titulo}"</Text>
 
                 <View style={styles.calificarStars}>
                   <Text style={styles.calificarLabel}>Estrellas:</Text>
