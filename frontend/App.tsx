@@ -963,7 +963,7 @@ export default function App() {
                   {item.emisor_id !== usuario?.id && (
                     <Text style={styles.messageSender}>{item.emisor_nombre}:</Text>
                   )}
-                  <Text style={[styles.messageText, item.emisor_id === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
+                  <Text style={[styles.messageBaseText, item.emisor_id === usuario?.id ? styles.messageOwnText : styles.messageOtherText]}>{item.mensaje}</Text>
                   <Text style={styles.messageTime}>
                     {item.fecha ? new Date(item.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
                   </Text>
@@ -1350,9 +1350,10 @@ const styles = StyleSheet.create({
   messageOwn: { alignSelf: 'flex-end', backgroundColor: Colors.primary, borderRadius: 15, padding: 10 },
   messageOther: { alignSelf: 'flex-start', backgroundColor: '#f0f0f0', borderRadius: 15, padding: 10 },
   messageSender: { fontSize: 12, color: '#666', fontFamily: 'OpenSans-SemiBold', marginBottom: 5 },
+  messageBaseText: { fontSize: 14, fontFamily: 'OpenSans-Regular' },
   messageOwnText: { color: '#fff' },
   messageOtherText: { color: '#333' },
-  messageTime: { fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 5, textAlign: 'right' },
+  messageTime: { fontSize: 10, color: '#999', marginTop: 5, textAlign: 'right' },
   noMessagesText: { textAlign: 'center', color: '#999', padding: 20, fontFamily: 'OpenSans-Regular' },
   chatInputContainer: { flexDirection: 'row', padding: 15, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'flex-end' },
   chatInput: { flex: 1, backgroundColor: '#f8f9fa', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, marginRight: 10, fontFamily: 'OpenSans-Regular', maxHeight: 100 },
