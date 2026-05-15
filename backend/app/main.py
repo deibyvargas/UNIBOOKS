@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 
-# Importamos la configuración de base de datos y modelos
-from .database import SessionLocal, inicializar_base_de_datos
-from . import models
+# ✅ IMPORTACIONES CORREGIDAS
+from app.database import SessionLocal, inicializar_base_de_datos
+import app.models as models
 
 # ✅ INICIALIZACIÓN
 inicializar_base_de_datos()
@@ -25,6 +25,7 @@ if not os.path.exists(UPLOAD_DIR):
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
+# ✅ CORS para permitir conexiones desde Expo
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -74,7 +75,7 @@ def get_db():
     finally:
         db.close()
 
-# ==================== 📚 2. GESTIÓN DE LIBROS ====================
+# ==================== 📚 GESTIÓN DE LIBROS ====================
 
 @app.get("/libros")
 def obtener_todos(db: Session = Depends(get_db)):
@@ -280,7 +281,7 @@ def eliminar_libro(libro_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Libro eliminado exitosamente"}
 
-# ==================== 🔍 3. BÚSQUEDA Y NAVEGACIÓN ====================
+# ==================== 🔍 BÚSQUEDA Y NAVEGACIÓN ====================
 
 @app.get("/libros/buscar")
 def buscar_libros(
@@ -318,7 +319,7 @@ def buscar_libros(
         "imagen_url": l.imagen_url
     } for l in libros]
 
-# ==================== 💬 4. COMUNICACIÓN Y TRANSACCIONES ====================
+# ==================== 💬 SOLICITUDES Y TRANSACCIONES ====================
 
 @app.post("/solicitudes")
 def crear_solicitud(solicitud: SolicitudRequest, db: Session = Depends(get_db)):
@@ -502,7 +503,7 @@ def crear_chat(libro_id: int, usuario1_id: int, usuario2_id: int, db: Session = 
     db.refresh(chat)
     return {"id": chat.id}
 
-# ==================== ⭐ 5. CALIFICACIONES ====================
+# ==================== ⭐ CALIFICACIONES ====================
 
 @app.post("/calificaciones")
 def crear_calificacion(calificacion: CalificacionRequest, db: Session = Depends(get_db)):
@@ -655,3 +656,10 @@ async def subir_foto_perfil(
     db.commit()
     
     return {"message": "Foto de perfil actualizada", "foto_perfil": unique_filename}
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Iniciando servidor UNIBOOKS...")
+    print("📚 API disponible en: http://localhost:8000")
+    print("📖 Documentación: http://localhost:8000/docs")
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

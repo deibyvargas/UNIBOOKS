@@ -8,33 +8,32 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- LÓGICA DE CONEXIÓN DINÁMICA ---
-# 1. Azure nos dará la URL en la variable de entorno 'DATABASE_URL'. 
-# 2. Si no existe, usará SQLite local para pruebas rápidas.
+# Si defines DATABASE_URL en producción o pruebas, se usa esa conexión.
+# De lo contrario, por defecto se usa SQLite local en 'backend/DeibyVargas.DB'.
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./DeibyVargas.DB")
-db_type = "Azure SQL (Cloud)" if "unibooks.database.windows.net" in SQLALCHEMY_DATABASE_URL else "SQLite (Local)"
 
-engine_kwargs = {
-    "connect_args": {},
-    "pool_pre_ping": True,  # Verifica la conexión antes de usarla (vital para Azure)
-    "pool_recycle": 1800,   # Recicla conexiones cada 30 min
-    "pool_size": 10,        # Conexiones simultáneas permitidas
-    "max_overflow": 20      # Conexiones extra en picos de tráfico
-}
+# Corrección de protocolo para SQLAlchemy (Heroku usa postgres:// pero se requiere postgresql://)
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Configuramos el motor según la base de datos
 if "sqlite" in SQLALCHEMY_DATABASE_URL:
-    engine_kwargs["connect_args"]["check_same_thread"] = False
-    
-engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, 
+        connect_args={"check_same_thread": False} # Solo para SQLite
+    )
+else:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 def inicializar_base_de_datos():
     """
-    Sincroniza los modelos con la base de datos (Local o Azure SQL).
+    Sincroniza los modelos con la base de datos (Local o Heroku).
     """
     try:
-        from . import models 
+        from app import models
         Base.metadata.create_all(bind=engine)
 
         # Extraer el host para confirmación visual
@@ -48,5 +47,6 @@ def inicializar_base_de_datos():
         print(f"📡 Servidor: {host}")
 
         print("-------------------------")
+        return True
     except Exception as e:
-        print(f"❌ Error al inicializar las tablas: {e}")
+        print(f"❌ Error al conectar la base de datos: {e}")

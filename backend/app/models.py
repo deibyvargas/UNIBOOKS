@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Text, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from .database import Base
+from app.database import Base
 import datetime
 
 class Usuario(Base):
@@ -18,56 +18,48 @@ class Usuario(Base):
     # Relaciones
     libros = relationship("Libro", back_populates="dueno", cascade="all, delete-orphan")
     
-    # Para transacciones como comprador
     transacciones_como_comprador = relationship(
         "Transaccion", 
         foreign_keys="Transaccion.comprador_id",
         back_populates="comprador"
     )
     
-    # Para transacciones como vendedor
     transacciones_como_vendedor = relationship(
         "Transaccion", 
         foreign_keys="Transaccion.vendedor_id",
         back_populates="vendedor"
     )
     
-    # Mensajes enviados
     mensajes_enviados = relationship(
         "Mensaje",
         foreign_keys="Mensaje.emisor_id",
         back_populates="emisor"
     )
     
-    # Calificaciones recibidas
     calificaciones_recibidas = relationship(
         "Calificacion",
         foreign_keys="Calificacion.calificado_id",
         back_populates="calificado"
     )
     
-    # Calificaciones emitidas
     calificaciones_emitidas = relationship(
         "Calificacion",
         foreign_keys="Calificacion.calificador_id",
         back_populates="calificador"
     )
     
-    # Notificaciones
     notificaciones = relationship(
         "Notificacion",
         back_populates="usuario",
         cascade="all, delete-orphan"
     )
     
-    # Chats como usuario1
     chats_como_usuario1 = relationship(
         "Chat",
         foreign_keys="Chat.usuario1_id",
         back_populates="usuario1"
     )
     
-    # Chats como usuario2
     chats_como_usuario2 = relationship(
         "Chat",
         foreign_keys="Chat.usuario2_id",
@@ -82,10 +74,10 @@ class Libro(Base):
     autor = Column(String(100), nullable=False)
     precio = Column(Float, default=0.0)
     categoria = Column(String(50), index=True)
-    estado = Column(String(50), nullable=False)  # Nuevo, Buen estado, Usado, Dañado, Vendido, Intercambiado
-    tipo_publicacion = Column(String(50), nullable=False)  # venta, intercambio, ambos
-    imagen_url = Column(String(255))  # URL de la primera imagen (para compatibilidad)
-    imagenes = Column(Text)  # URLs de múltiples imágenes separadas por coma
+    estado = Column(String(50), nullable=False)
+    tipo_publicacion = Column(String(50), nullable=False)
+    imagen_url = Column(String(255))
+    imagenes = Column(Text)
     descripcion = Column(Text)
     destacado = Column(Boolean, default=False)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
@@ -103,8 +95,8 @@ class Transaccion(Base):
     libro_id = Column(Integer, ForeignKey("libros.id"), nullable=False)
     comprador_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     vendedor_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    tipo = Column(String(20), nullable=False)  # compra, intercambio
-    estado = Column(String(20), default="pendiente")  # pendiente, aceptado, rechazado, completado
+    tipo = Column(String(20), nullable=False)
+    estado = Column(String(20), default="pendiente")
     precio = Column(Float, default=0.0)
     fecha = Column(DateTime, default=datetime.datetime.utcnow)
     
@@ -169,11 +161,11 @@ class Notificacion(Base):
     __tablename__ = "notificaciones"
     id = Column(Integer, primary_key=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    tipo = Column(String(50), nullable=False)  # mensaje, solicitud, respuesta, calificacion, publicacion
+    tipo = Column(String(50), nullable=False)
     titulo = Column(String(100))
     mensaje = Column(Text, nullable=False)
     leida = Column(Boolean, default=False)
-    metadata_json = Column(Text)  # JSON con datos adicionales
+    metadata_json = Column(Text)
     fecha = Column(DateTime, default=datetime.datetime.utcnow)
     
     # Relaciones

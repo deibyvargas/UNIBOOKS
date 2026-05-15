@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView, Platform, Keyboard, Modal, Switch 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Colors from './constants/Colors'; 
+import { Colors } from './constants/Colors';
 import { Libro } from './types';
 import { useFonts } from 'expo-font';
 import { 
@@ -18,11 +18,14 @@ import {
 } from '@expo-google-fonts/open-sans';
 
 // --- CONFIGURACIÓN GLOBAL ---
-// Cambia a la URL de Azure cuando hayas subido (deployed) el código del backend al App Service
-const URL_PRODUCCION = 'https://unibooks-g3cjb8fmewd3efe8.canadacentral-01.azurewebsites.net';
-const URL_LOCAL = 'http://192.168.56.1:8000';
+// Reemplaza esta IP por la IP de tu PC en la misma red Wi-Fi del dispositivo real.
+const URL_LOCAL = 'http://10.157.30.148:8000';
+// Si usas ngrok, pega aquí la URL pública HTTP(S) que te genera ngrok.
+const URL_NGROK = 'https://elodia-nonhereditable-kittie.ngrok-free.dev';
 
-const URL_BASE = URL_LOCAL; // Cambiado a LOCAL para desarrollo activo
+// Cambia a true para usar ngrok, false para usar la API local.
+const USAR_NGROK = false;
+const URL_BASE = USAR_NGROK ? URL_NGROK : URL_LOCAL;
 
 
 // --- TIPOS ---
@@ -181,7 +184,7 @@ export default function App() {
       }
     } catch (error: any) {
       console.error("Error al cargar datos:", error);
-      if (error.name === 'AbortError') Alert.alert("Servidor Lento", "El servidor de Azure está tardando en responder. Intenta de nuevo en unos segundos.");
+      if (error.name === 'AbortError') Alert.alert("Servidor Lento", "El servidor está tardando en responder. Intenta de nuevo en unos segundos.");
     } finally {
       setLoading(false);
     }
@@ -200,7 +203,7 @@ export default function App() {
     
     if (esRegistro) {
       if (!validarCorreoUdec(correoLimpio)) {
-        return Alert.alert("Acceso Restringido", "Para registrarte en Azure SQL, debes usar tu correo @ucundinamarca.edu.co");
+        return Alert.alert("Acceso Restringido", "Para registrarte debes usar tu correo @ucundinamarca.edu.co");
       }
       setLoading(true);
       try {
@@ -212,7 +215,7 @@ export default function App() {
         
         const data = await res.json();
         if (res.ok) { 
-          Alert.alert("¡Registro Exitoso!", "Tu cuenta ha sido creada en la base de datos de Azure. Ahora puedes iniciar sesión."); 
+          Alert.alert("¡Registro Exitoso!", "Tu cuenta ha sido creada localmente. Ahora puedes iniciar sesión."); 
           setEsRegistro(false);
           setFormUser({ nombre: '', correo: '', password: '', carrera: '', semestre: '' });
         } else {
@@ -1400,8 +1403,8 @@ const styles = StyleSheet.create({
   editIcon: { position: 'absolute', bottom: 0, right: 0, backgroundColor: Colors.primary, borderRadius: 15, width: 30, height: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
   editIconText: { fontSize: 14 },
 
-  tabBar: { flexDirection: 'row', height: 70, backgroundColor: Colors.primary, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingBottom: 10, paddingTop: 10 },
+  tabBar: { flexDirection: 'row', height: 80, backgroundColor: Colors.primary, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingBottom: 10, paddingTop: 10 },
   tabItem: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tabText: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontFamily: 'OpenSans-SemiBold', textAlign: 'center' },
-  tabActive: { color: Colors.secondary, fontSize: 11, fontWeight: 'bold' }
+  tabText: { color: 'rgba(255,255,255,0.6)', fontSize: 20, fontFamily: 'OpenSans-SemiBold', textAlign: 'center' },
+  tabActive: { color: Colors.secondary, fontSize: 22, fontWeight: 'bold' }
 });
